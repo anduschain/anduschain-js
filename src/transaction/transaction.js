@@ -200,7 +200,7 @@ Transaction.prototype.getDataFee = () => {
 };
 Transaction.prototype.getBaseFee = () => {
     const fee = this.getDataFee().iaddn(this._common.param('gasPrices', 'tx'))
-    if (this._common.gteHardfork('homestead') && this.toCreationAddress()) {
+    if (this._common.getHardfork('homestead') && this.toCreationAddress()) {
         fee.iaddn(this._common.param('gasPrices', 'txCreation'))
     }
     return fee
