@@ -1,17 +1,17 @@
 const { chains:chainParams } = require('./chains');
 const { hardforks:hardforkChanges } = require('./hardforks');
 
-function Common(chain, hardfork, supportedHardforks) {
+function Common(chain, hardfork) {
     if (!(this instanceof Common)) throw new Error("Common must be called instance.");
     this._chainParams = this.setChain(chain);
     this._hardfork = null;
-    this._supportedHardforks = supportedHardforks === undefined ? [] : supportedHardforks
+    this._supportedHardforks = [];
     if (hardfork) {
         this.setHardfork(hardfork)
     }
 }
 
-Common.prototype.setHardfork = (hardfork) => {
+Common.prototype.setHardfork = function (hardfork) {
     if (!this._isSupportedHardfork(hardfork)) {
         throw new Error(`Hardfork ${hardfork} not set as supported in supportedHardforks`)
     }
@@ -26,7 +26,7 @@ Common.prototype.setHardfork = (hardfork) => {
         throw new Error(`Hardfork with name ${hardfork} not supported`)
     }
 };
-Common.prototype._isSupportedHardfork = (hardfork) => {
+Common.prototype._isSupportedHardfork = function (hardfork) {
     if (this._supportedHardforks.length > 0) {
         for (const supportedHf of this._supportedHardforks) {
             if (hardfork === supportedHf) return true
@@ -36,19 +36,29 @@ Common.prototype._isSupportedHardfork = (hardfork) => {
     }
     return false
 };
-Common.prototype.hardforks = () => this._chainParams['hardforks'];
-Common.prototype.getHardfork = (hardfork) => {
+Common.prototype.hardforks = function () {
+    return this._chainParams['hardforks'];
+};
+Common.prototype.getHardfork = function (hardfork) {
     const hfs = this.hardforks();
     for (const hf of hfs) {
         if (hf['name'] === hardfork) return hf
     }
     throw new Error(`Hardfork ${hardfork} not defined for chain ${this.chainName()}`)
 };
-Common.prototype.genesis = () => this._chainParams['genesis'];
-Common.prototype.chainId = () => this._chainParams['chainId'];
-Common.prototype.chainName = () => this._chainParams['name'];
-Common.prototype.networkId = () => this._chainParams['networkId'];
-Common.prototype.setChain = (chain) => {
+Common.prototype.genesis = function() {
+    return this._chainParams['genesis'];
+};
+Common.prototype.chainId = function() {
+    return this._chainParams['chainId'];
+};
+Common.prototype.chainName = function(){
+    return this._chainParams['name'];
+};
+Common.prototype.networkId = function(){
+    return this._chainParams['networkId'];
+};
+Common.prototype.setChain = function(chain) {
     if (typeof chain === 'number' || typeof chain === 'string') {
         this._chainParams = Common._getChainParams(chain)
     } else {
@@ -56,22 +66,24 @@ Common.prototype.setChain = (chain) => {
     }
     return this._chainParams
 };
-Common.prototype._chooseHardfork = (hardfork, onlySupported) => {
-    onlySupported = onlySupported === undefined ? true : onlySupported;
+Common.prototype._chooseHardfork = function(hardfork, onlySupported) {
+    let onlySupp = onlySupported ? onlySupported : true;
     if (!hardfork) {
         if (!this._hardfork) {
             throw new Error('Method called with neither a hardfork set nor provided by param')
         } else {
             hardfork = this._hardfork
         }
-    } else if (onlySupported && !this._isSupportedHardfork(hardfork)) {
+    } else if (onlySupp && !this._isSupportedHardfork(hardfork)) {
         throw new Error(`Hardfork ${hardfork} not set as supported in supportedHardforks`)
     }
     return hardfork
 };
-Common.prototype.param = (topic, name) => {
-    hardfork = this._chooseHardfork(hardfork);
-    let value;
+Common.prototype.param = function(topic, name, hardfork) {
+    let value, fork;
+    if (hardfork) {
+        fork = this._chooseHardfork(hardfork);
+    }
     for (const hfChanges of hardforkChanges) {
         if (!hfChanges[1][topic]) {
             throw new Error(`Topic ${topic} not defined`)
@@ -79,14 +91,14 @@ Common.prototype.param = (topic, name) => {
         if (hfChanges[1][topic][name] !== undefined) {
             value = hfChanges[1][topic][name].v
         }
-        if (hfChanges[0] === hardfork) break
+        if (hfChanges[0] === fork) break
     }
     if (value === undefined) {
         throw new Error(`${topic} value for ${name} not found`)
     }
     return value
 };
-Common._getChainParams = (chain) => {
+Common._getChainParams = function(chain) {
     if (Number.isInteger(chain)) {
         if (chainParams['names'][chain]) {
             return chainParams[chainParams['names'][chain]]

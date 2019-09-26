@@ -90,10 +90,6 @@ function Transaction(data, chain) {
     this.gasPrice = undefined;
     this.to = undefined;
     this.value = undefined;
-    this.data = undefined;
-    this.v = undefined;
-    this.r = undefined;
-    this.s = undefined;
 
     this._senderPubKey = undefined;
     this._from = undefined;
@@ -113,17 +109,15 @@ function Transaction(data, chain) {
 
     this._validateV(this.v);
     this._overrideVSetterWithValidation();
-
-    console.log("---------------------", this)
 }
-Transaction.prototype.hash = (includeSignature) => {
+Transaction.prototype.hash = function(includeSignature = true) {
     let items;
     if (includeSignature) {
         items = this.raw
     } else {
         if (this._implementsEIP155()) {
             items = [
-                ...this.raw.slice(0, 6),
+                ...this.raw.slice(0, 7),
                 toBuffer(this.getChainId()),
                 // TODO: stripping zeros should probably be a responsibility of the rlp module
                 stripZeros(toBuffer(0)),
@@ -136,18 +130,18 @@ Transaction.prototype.hash = (includeSignature) => {
     // create hash
     return rlphash(items)
 };
-Transaction.prototype.getChainId = () => {
-    return 14288641
+Transaction.prototype.getChainId = function() {
+    return this._common.chainId()
 };
-Transaction.prototype.getSenderAddress = () => {
+Transaction.prototype.getSenderAddress = function() {
     if (this._from) {
         return this._from
     }
-    const pubkey = this.getSenderPublicKey()
-    this._from = publicToAddress(pubkey)
+    const pubkey = this.getSenderPublicKey();
+    this._from = publicToAddress(pubkey);
     return this._from
 };
-Transaction.prototype.getSenderPublicKey = () => {
+Transaction.prototype.getSenderPublicKey = function() {
     if (!this.verifySignature()) {
         throw new Error('Invalid Signature')
     }
@@ -155,15 +149,22 @@ Transaction.prototype.getSenderPublicKey = () => {
     // If the signature was verified successfully the _senderPubKey field is defined
     return this._senderPubKey
 };
-Transaction.prototype.verifySignature = () => {
+Transaction.prototype.verifySignature = function() {
     const msgHash = this.hash(false);
     // All transaction signatures whose s-value is greater than secp256k1n/2 are considered invalid.
-    // if (this._common.gteHardfork('homestead') && new BN(this.s).cmp(N_DIV_2) === 1) {
-    //     return false
-    // }
+    if (this._common.getHardfork('homestead') && new BN(this.s).cmp(N_DIV_2) === 1) {
+        return false
+    }
     try {
         const v = bufferToInt(this.v);
         const useChainIdWhileRecoveringPubKey = v >= this.getChainId() * 2 + 35;
+
+        console.log("Hash", msgHash.toString('hex'));
+        console.log("R", this.r.toString('hex'));
+        console.log("S", this.s.toString('hex'));
+        console.log("V", v);
+        console.log("this.getChainId()", this.getChainId() * 2 + 35);
+
         this._senderPubKey = ecrecover(
             msgHash,
             v,
@@ -177,7 +178,7 @@ Transaction.prototype.verifySignature = () => {
 
     return !!this._senderPubKey
 };
-Transaction.prototype.sign = () => {
+Transaction.prototype.sign = function (privateKey) {
     this.v = Buffer.from([]);
     this.s = Buffer.from([]);
     this.r = Buffer.from([]);
@@ -188,7 +189,7 @@ Transaction.prototype.sign = () => {
     }
     Object.assign(this, sig)
 };
-Transaction.prototype.getDataFee = () => {
+Transaction.prototype.getDataFee = function() {
     const data = this.raw[5];
     const cost = new BN(0);
     for (let i = 0; i < data.length; i++) {
@@ -198,17 +199,20 @@ Transaction.prototype.getDataFee = () => {
     }
     return cost
 };
-Transaction.prototype.getBaseFee = () => {
+Transaction.prototype.getBaseFee = function() {
     const fee = this.getDataFee().iaddn(this._common.param('gasPrices', 'tx'))
     if (this._common.getHardfork('homestead') && this.toCreationAddress()) {
         fee.iaddn(this._common.param('gasPrices', 'txCreation'))
     }
     return fee
 };
-Transaction.prototype.getUpfrontCost = () => {
+Transaction.prototype.getUpfrontCost = function() {
     return new BN(this.gasLimit).imul(new BN(this.gasPrice)).iadd(new BN(this.value))
 };
-Transaction.prototype._validateV = (v) => {
+Transaction.prototype.toCreationAddress = function() {
+    return this.to.toString('hex') === ''
+};
+Transaction.prototype._validateV = function(v) {
     if (v === undefined || v.length === 0 || !Buffer.isBuffer(v)) {
         return
     }
@@ -217,7 +221,7 @@ Transaction.prototype._validateV = (v) => {
         return
     }
     const isValidEIP155V =
-        vInt === this.getChainId() * 2 + 35 || vInt === this.getChainId() * 2 + 36
+        vInt === this.getChainId() * 2 + 35 || vInt === this.getChainId() * 2 + 36;
 
     if (!isValidEIP155V) {
         throw new Error(
@@ -225,7 +229,7 @@ Transaction.prototype._validateV = (v) => {
         )
     }
 };
-Transaction.prototype._overrideVSetterWithValidation = () => {
+Transaction.prototype._overrideVSetterWithValidation = function() {
     const vDescriptor = Object.getOwnPropertyDescriptor(this, 'v');
     Object.defineProperty(this, 'v', {
         ...vDescriptor,
@@ -237,14 +241,16 @@ Transaction.prototype._overrideVSetterWithValidation = () => {
         },
     })
 };
-Transaction.prototype.serialize = () => rlp.encode(this.raw);
-Transaction.prototype._isSigned = () => this.v.length > 0 && this.r.length > 0 && this.s.length > 0;
-Transaction.prototype._implementsEIP155 = () => {
+Transaction.prototype.serialize = function() {
+    return rlp.encode(this.raw);
+};
+Transaction.prototype._isSigned =  function() {
+    return this.v.length > 0 && this.r.length > 0 && this.s.length > 0;
+};
+Transaction.prototype._implementsEIP155 = function(){
     if (!this._isSigned()) {
-        // We sign with EIP155 all unsigned transactions after spuriousDragon
-        return false
+        return true
     }
-
     // EIP155 spec:
     // If block.number >= 2,675,000 and v = CHAIN_ID * 2 + 35 or v = CHAIN_ID * 2 + 36, then when computing
     // the hash of a transaction for purposes of signing or recovering, instead of hashing only the first six
