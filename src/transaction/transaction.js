@@ -158,13 +158,6 @@ Transaction.prototype.verifySignature = function() {
     try {
         const v = bufferToInt(this.v);
         const useChainIdWhileRecoveringPubKey = v >= this.getChainId() * 2 + 35;
-
-        console.log("Hash", msgHash.toString('hex'));
-        console.log("R", this.r.toString('hex'));
-        console.log("S", this.s.toString('hex'));
-        console.log("V", v);
-        console.log("this.getChainId()", this.getChainId() * 2 + 35);
-
         this._senderPubKey = ecrecover(
             msgHash,
             v,
