@@ -1,14 +1,24 @@
 {
   "name": "anduschain-js",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.5.1",
+  "description": "anduschain javascript sdk",
   "scripts": {
     "test": "jest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "main": "./src",
+  "keywords": ["anduschain", "dapp", "blockchain"],
+  "author": "andus",
+  "licenses": [ {
+    "type": "MIT",
+    "url": "http://www.opensource.org/licenses/MIT"
+  }],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anduschain/anduschain-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anduschain/anduschain-js/issues"
+  },
   "devDependencies": {
     "jest": "^24.9.0"
   },
