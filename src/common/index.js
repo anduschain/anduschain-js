@@ -1,5 +1,5 @@
 const { chains:chainParams } = require('./chains');
-const { hardforks:hardforkChanges } = require('./hardforks');
+const hardforkChanges = require('./hardforks');
 
 function Common(chain, hardfork) {
     if (!(this instanceof Common)) throw new Error("Common must be called instance.");
@@ -89,7 +89,7 @@ Common.prototype.param = function(topic, name, hardfork) {
             throw new Error(`Topic ${topic} not defined`)
         }
         if (hfChanges[1][topic][name] !== undefined) {
-            value = hfChanges[1][topic][name].v
+            value = hfChanges[1][topic][name].v;
         }
         if (hfChanges[0] === fork) break
     }

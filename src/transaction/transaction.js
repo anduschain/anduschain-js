@@ -82,6 +82,25 @@ const fields = [
 // secp256k1n/2
 const N_DIV_2 = new BN('7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0', 16);
 
+function setDefultGasFields(data) {
+    const defaultGasPrice = 23809523805524;
+    const defaultGasLimit = 21000;
+    if (Array.isArray(data)) {
+        return data
+    }else{
+        if (!data.type) {
+            data.type = 0
+        }
+        if (!data.gasPrice) {
+            data.gasPrice = defaultGasPrice;
+        }
+        if (!data.gasLimit) {
+            data.gasLimit = defaultGasLimit;
+        }
+    }
+    return data
+}
+
 function Transaction(data, chain) {
     if (!(this instanceof Transaction)) throw new Error("Transaction must be called instance.");
     this.raw = undefined;
@@ -95,6 +114,7 @@ function Transaction(data, chain) {
     this._from = undefined;
     this._common = new Common(chain);
 
+    data = setDefultGasFields(data);
     defineProperties(this, fields, data);
     /**
      * @property {Buffer} from (read only) sender address of this transaction, mathematically derived from other parameters.
@@ -124,7 +144,7 @@ Transaction.prototype.hash = function(includeSignature = true) {
                 stripZeros(toBuffer(0)),
             ]
         } else {
-            items = this.raw.slice(0, 6)
+            items = this.raw.slice(0, 7)
         }
     }
     // create hash
@@ -183,7 +203,7 @@ Transaction.prototype.sign = function (privateKey) {
     Object.assign(this, sig)
 };
 Transaction.prototype.getDataFee = function() {
-    const data = this.raw[5];
+    const data = this.raw[6];
     const cost = new BN(0);
     for (let i = 0; i < data.length; i++) {
         data[i] === 0
@@ -193,7 +213,7 @@ Transaction.prototype.getDataFee = function() {
     return cost
 };
 Transaction.prototype.getBaseFee = function() {
-    const fee = this.getDataFee().iaddn(this._common.param('gasPrices', 'tx'))
+    const fee = this.getDataFee().iaddn(this._common.param('gasPrices', 'tx'));
     if (this._common.getHardfork('homestead') && this.toCreationAddress()) {
         fee.iaddn(this._common.param('gasPrices', 'txCreation'))
     }

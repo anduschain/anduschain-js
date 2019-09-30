@@ -1,47 +1,68 @@
 const { Transaction } = require('../src/transaction');
 
-const txData = {
-    type: '0x00',
-    nonce: '0x00',
-    gasPrice: '0x09184e72a000',
-    gasLimit: '0x2710',
-    to: '0x0000000000000000000000000000000000000000',
-    value: '0x00',
-    data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
-    v: '0x1c',
-    r: '0x5e1d3a76fbf824220eafc8c79ad578ad2b67d01b0c2425eb1f1347e8f50882ab',
-    s: '0x5bd428537f05f9830e93792f90ea6a3e2d1ee84952dd96edbae9f658f831ab13',
-};
+const privateKey = Buffer.from(
+    'abd1374002952e5f3b60fd16293d06521e1557d9dfb9996561568423a26a9cc9',
+    'hex',
+);
 
-const rawTx = [
-    '0x00',
-    '0x00',
-    '0x09184e72a000',
-    '0x2710',
-    '0x0000000000000000000000000000000000000000',
-    '0x00',
-    '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
-    '0x1c',
-    '0x5e1d3a76fbf824220eafc8c79ad578ad2b67d01b0c2425eb1f1347e8f50882ab',
-    '0x5bd428537f05f9830e93792f90ea6a3e2d1ee84952dd96edbae9f658f831ab13',
+const testData = [
+    {
+        tx : {
+            type: '0x00',
+            nonce: '0x00',
+            gasPrice: '0x09184e72a000',
+            gasLimit: '0x2710',
+            to: '0x0000000000000000000000000000000000000000',
+            value: '0x00',
+            data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
+        },
+        result : {
+            hash : '4408520855374c21491a11ddfe88fcb461449c33c043c8b9e938773466a87553',
+            sender : '160a2189e10ec349e176d8fa6fccf4a19ed6d133'
+        }
+    },
+    {
+        tx : {
+            type: 0,
+            nonce: 0,
+            gasPrice: 10000000000000,
+            gasLimit: 10000,
+            to: '0x0000000000000000000000000000000000000000',
+            value: '0x00',
+            data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
+        },
+        result : {
+            hash : '4408520855374c21491a11ddfe88fcb461449c33c043c8b9e938773466a87553',
+            sender : '160a2189e10ec349e176d8fa6fccf4a19ed6d133'
+        }
+    },
+    {
+        tx : [
+            '0x00',
+            '0x00',
+            '0x09184e72a000',
+            '0x2710',
+            '0x0000000000000000000000000000000000000000',
+            '0x00',
+            '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
+        ],
+        result : {
+            hash : '4408520855374c21491a11ddfe88fcb461449c33c043c8b9e938773466a87553',
+            sender : '160a2189e10ec349e176d8fa6fccf4a19ed6d133'
+        }
+    }
 ];
 
-test('Make Object to Transaction', done => {
+test('Make Transaction test', done => {
     try {
-        const tx = new Transaction(txData, 'testnet');
-        expect(tx.hash().toString('hex')).toBe('56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421');
+        for (let i in testData) {
+            const tx = new Transaction(testData[i].tx, 'testnet');
+            tx.sign(privateKey);
+            expect(tx.getSenderAddress().toString('hex')).toBe(testData[i].result.sender);
+            expect(tx.hash().toString('hex')).toBe(testData[i].result.hash);
+        }
         done()
     }catch (e) {
         done.fail(e)
-    };
-});
-
-test('Make Array(Raw) to Transaction', done => {
-    try {
-        const tx = new Transaction(rawTx, 'testnet');
-        expect(tx.hash().toString('hex')).toBe('56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421');
-        done()
-    }catch (e) {
-        done.fail(e)
-    };
+    }
 });
