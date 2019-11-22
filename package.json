@@ -1,6 +1,6 @@
 {
   "name": "anduschain-js",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "anduschain javascript sdk",
   "scripts": {
     "test": "jest"
