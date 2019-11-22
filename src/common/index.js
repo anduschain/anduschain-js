@@ -99,16 +99,21 @@ Common.prototype.param = function(topic, name, hardfork) {
     return value
 };
 Common._getChainParams = function(chain) {
+    /**
+     * @Params chain -> Number(chain) or "testnet", mainnet
+     * */
     if (Number.isInteger(chain)) {
         if (chainParams['names'][chain]) {
             return chainParams[chainParams['names'][chain]]
+        }else{
+            return chainParams.custom(`Private_${chain}`, chain)
         }
-        throw new Error(`Chain with ID ${chain} not supported`)
+    }else{
+        if (chainParams[chain]) {
+            return chainParams[chain]
+        }
+        throw new Error(`This chainID ${chain} is not Support`)
     }
-    if (chainParams[chain]) {
-        return chainParams[chain]
-    }
-    throw new Error(`Chain with name ${chain} not supported`)
 };
 
 module.exports = Common;
