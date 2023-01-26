@@ -20,7 +20,7 @@
     "url": "https://github.com/anduschain/anduschain-js/issues"
   },
   "devDependencies": {
-    "jest": "^24.9.0"
+    "jest": "^29.3.1"
   },
   "dependencies": {
     "ethereumjs-util": "^6.1.0"
